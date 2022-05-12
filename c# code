@@ -1,0 +1,17 @@
+// insert from code
+using System.IO;
+using System.IO.Ports;
+string prvi = odabranaKombinacija[0];
+string drugi = odabranaKombinacija[1];
+string treci = odabranaKombinacija[2];
+string cetvrti = odabranaKombinacija[3];
+string ukupni ="<"+prvi + "," + drugi + "," +treci + "," +
+cetvrti+">"; //string with 4 information
+
+
+ myport = new SerialPort(); 
+ myport.BaudRate = 57600;
+ myport.PortName = "COM7";
+ myport.Open();
+ myport.WriteLine(ukupni); //send string "ukupni"
+ myport.Close();
