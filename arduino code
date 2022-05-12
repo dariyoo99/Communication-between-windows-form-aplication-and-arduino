@@ -1,0 +1,103 @@
+const byte numChars = 32;
+char receivedChars[numChars];
+char tempChars[numChars]; // privremeni array za spremanje
+primljenih podataka
+float temp[4]; // varijabla za spremanje podataka
+boolean newData = false;
+//============
+void setup() {
+ Serial.begin(57600);
+ pinMode(10,OUTPUT);
+ pinMode(9,OUTPUT);
+ pinMode(8,OUTPUT);
+ pinMode(7,OUTPUT);
+ pinMode(6,OUTPUT);
+ pinMode(5,OUTPUT); //postavljanje digitalnih pinova u output mod
+}
+//============
+void loop() {
+ recvWithStartEndMarkers();
+ if (newData == true) { //ako su se zaprimili novi podaci
+ strcpy(tempChars, receivedChars); //spremamo originalne podatke za
+slučaj da su potrebni kod debugiranja
+ parseData(); //funkcija za raščlanjivanje primljenog niza znakova.
+ pumpCtrl(); //funkcija za upravljanje pumpama
+ newData = false;
+ }
+}
+//============
+void recvWithStartEndMarkers() {
+ static boolean recvInProgress = false;
+ static byte ndx = 0;
+ char startMarker = '<'; //marker koji označava početak "poruke"
+ char endMarker = '>'; //marker koji označava kraj "poruke"
+ char rc; //varijabla za privremeno spremanje zaprimljenih znakova
+ while (Serial.available() > 0 && newData == false) { //dok god se
+zaprimaju podaci preko serijskog ulaza i nije došlo do spremanja novih
+podataka
+ rc = Serial.read(); //spremaj znakove koji dolaze na serijski ulazu varijablu rc
+ if (recvInProgress == true) { //ako je primanje poruke sa početnim markerom krenulo
+ if (rc != endMarker) { //ako trenutni znak iščitan sa serijskog
+ulaza nije jednak markeru kraja
+ receivedChars[ndx] = rc; //spremi primljeni znak u array na
+mjesto sa indexom ndx
+ ndx++; //inkrementiraj ndx
+ if (ndx >= numChars) {
+ ndx = numChars - 1;
+ } //može se primiti 32 znaka, no ukoliko zaprimimo više
+posljednji (odnosno pretposljednji) znak sprema se na mjesto s indeksom 31
+ }
+ else {
+ receivedChars[ndx] = '\0'; //ako je posljednji primljeni
+znak jednak krajnom markeru stavlja se null na posljednje mjesto arraya
+ recvInProgress = false;//primanje znakova je završilo
+ ndx = 0; //resetiraj pokazivač indeksa ndx na nulu
+ newData = true; //novi podaci su spremljeni
+ }
+ }
+ else if (rc == startMarker) {
+ recvInProgress = true; //ako je prvi zaprimljeni znak jednak
+početnom markeru započmi primanje, odnosno spremanje, poruke
+ }
+ }
+}
+//============
+void parseData() { // raščlanjivanje primljene poruke
+ char * strtokIndx; // strtok ovo koristi kao indeks
+ strtokIndx = strtok(tempChars,","); // izvlačenje prvog dijela kao
+string, izvlači se prva vrijednost
+ temp[0] = atof(strtokIndx); //vrši se konverzija iz stringa u decimalni
+float broj, sprema se na prvo mjesto temp arraya
+ strtokIndx = strtok(NULL, ",");//ovo nastavlja od mjesta gdje je
+prethodni strtok stao
+ temp[1] = atof(strtokIndx);
+ strtokIndx = strtok(NULL, ",");
+ temp[2] = atof(strtokIndx);
+ strtokIndx = strtok(NULL, ",");
+ temp[3] = atof(strtokIndx);
+}
+void pumpCtrl(){
+for(int i=0;i<6;i++)
+{
+if(temp[0]==i)//ako je brojka koja se nalazi na prvom mjestu u arrayu
+temp jednaka brojaču i
+{
+ digitalWrite(10-i,HIGH); //upali pumpu spojenu na 10-i ti digitalni
+pin
+ delay(temp[1]*50000); //drži ju upaljenu za brojka iz temp[1]*50000
+ms
+ digitalWrite(10-i,LOW); //ugasi pumpu
+ delay(500); //delay od 0.5 sekundi stavlja se zbog stabilnosti
+}
+}
+for(int i=0;i<6;i++)
+{
+if(temp[2]==i)
+{
+ digitalWrite(10-i,HIGH);
+ delay(temp[3]*50000);
+ digitalWrite(10-i,LOW);
+ delay(500);
+}
+}
+}
